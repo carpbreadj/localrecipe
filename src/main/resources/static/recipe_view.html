@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>레시피 상세</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet"
+        href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <style>
+    body { background:#e8f5e9; font-family:'Segoe UI', sans-serif; }
+    .container { max-width: 880px; margin-top:24px;}
+    .hero { display:flex; gap:20px; flex-wrap:wrap; }
+    .hero img { width:320px; height:240px; object-fit:cover; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); background:#fff; }
+    .card { border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+    li { margin-bottom:6px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <a href="main.html" class="btn btn-outline-success btn-sm">홈</a>
+      <a href="recipes.html" class="btn btn-outline-success btn-sm">목록</a>
+    </div>
+    <a href="/logout" class="btn btn-outline-danger btn-sm">로그아웃</a>
+  </div>
+
+  <div id="root"></div>
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+
+  async function load() {
+    const res = await fetch('/api/recipes/' + id);
+    if (!res.ok) { document.getElementById('root').innerHTML = '<p>존재하지 않는 레시피입니다.</p>'; return; }
+    const r = await res.json();
+    render(r);
+  }
+
+  function render(r) {
+    const root = document.getElementById('root');
+    const ingList = splitLines(r.ingredients);
+    const stepList = splitLines(r.steps);
+
+    root.innerHTML = `
+      <div class="card p-3">
+        <h2 class="mb-3">${r.title}</h2>
+        <div class="hero mb-3">
+          <img src="${r.imageUrl || '/images/sand.jpeg'}" alt="${r.title}">
+          <div class="flex-1">
+            <h5>재료</h5>
+            <ul>${ingList.map(li=>`<li>${escapeHtml(li)}</li>`).join('')}</ul>
+          </div>
+        </div>
+        <h5>만드는 순서</h5>
+        <ol>${stepList.map(li=>`<li>${escapeHtml(li)}</li>`).join('')}</ol>
+      </div>
+    `;
+  }
+
+  function splitLines(s){
+    if(!s) return [];
+    return s.replace(/\r/g,'').split(/\n|,/).map(x=>x.trim()).filter(Boolean);
+  }
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  load();
+</script>
+</body>
+</html>

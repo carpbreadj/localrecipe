@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>메인 페이지</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet"
+        href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" />
   <style>
     body { font-family: 'Segoe UI', sans-serif; background-color: #e8f5e9; margin:0; }
     .banner { background-color: #66bb6a; color: white; text-align: center; padding: 50px 0; font-size: 36px; font-weight: bold; }
@@ -14,44 +15,11 @@
     .menu-bar ul li a { color: #2e7d32; text-decoration: none; font-weight: bold; }
     .container { padding: 30px; }
     .row-box { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-    .recipe-section {
-      flex: 1;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-width: 300px;
-    }
-    .recipe-card {
-      text-align: center;
-      flex: 1;
-      margin-bottom: 20px;
-    }
-    .recipe-card img {
-      width: 100%;
-      height: 150px;
-      object-fit: cover;
-      border-radius: 8px;
-    }
-    .recipe-card h3 {
-      margin-top: 10px;
-      font-size: 18px;
-    }
-    .roulette-section {
-      flex: 1;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      min-width: 300px;
-    }
+    .recipe-section { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between; min-width: 300px; }
+    .recipe-card { text-align: center; flex: 1; margin-bottom: 20px; }
+    .recipe-card img { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; }
+    .recipe-card h3 { margin-top: 10px; font-size: 18px; }
+    .roulette-section { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-width: 300px; }
     button { background-color: #66bb6a; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
     button:hover { background-color: #43a047; }
     #rouletteCanvas { border: 10px solid #a5d6a7; border-radius: 50%; background-color: white; }
@@ -61,8 +29,9 @@
 <div class="banner">메인 페이지</div>
 <div class="menu-bar">
   <ul>
+    <li><a href="main.html">홈</a></li>
     <li><a href="fridge.html">나의 냉장고</a></li>
-    <li><a href="#">게시판</a></li>
+    <li><a href="recipes.html">레시피</a></li>
   </ul>
   <ul>
     <li><a href="/logout">로그아웃</a></li>
@@ -70,8 +39,21 @@
 </div>
 
 <div class="container">
-  <div class="row-box">
-    <!-- 레시피 카드 섹션 -->
+  <!-- 검색 -->
+  <div class="mb-4 p-3" style="background:white; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+    <div class="form-inline" style="gap:10px;">
+      <input id="searchText" class="form-control" placeholder="요리명으로 검색 (예: 김치볶음밥)">
+      <input id="searchIngr" class="form-control" placeholder="재료로 검색 (예: 계란)">
+      <button class="btn btn-success" onclick="doSearch()">검색</button>
+      <a class="btn btn-outline-success" href="recipes.html">레시피 보기/추가</a>
+    </div>
+    <small class="text-muted">둘 중 하나만 입력해도 됩니다.</small>
+  </div>
+
+  <div id="searchResult" class="row-box"></div>
+
+  <div class="row-box mt-4">
+    <!-- 추천 카드 -->
     <div class="recipe-section">
       <div class="recipe-card">
         <img src="/images/avocado.jpeg" alt="Avocado Salad" />
@@ -87,7 +69,7 @@
       </div>
     </div>
 
-    <!-- 룰렛 섹션 -->
+    <!-- 룰렛 -->
     <div class="roulette-section">
       <h4>🍳 오늘의 요리 추천</h4>
       <canvas id="rouletteCanvas" width="280" height="280" style="display:block; margin:0 auto;"></canvas>
@@ -98,6 +80,47 @@
 </div>
 
 <script>
+  // 검색
+  async function doSearch() {
+    const q = document.getElementById('searchText').value.trim();
+    const ing = document.getElementById('searchIngr').value.trim();
+    const params = new URLSearchParams();
+    if (q) params.append('q', q);
+    if (ing) params.append('ingredient', ing);
+    const res = await fetch('/api/recipes/search?' + params.toString());
+    const list = await res.json();
+    renderResults(list);
+  }
+  function renderResults(list) {
+    const wrap = document.getElementById('searchResult');
+    wrap.innerHTML = '';
+    if (!list.length) {
+      wrap.innerHTML = '<div class="recipe-section"><p class="text-muted m-0">검색 결과가 없습니다.</p></div>';
+      return;
+    }
+    list.forEach(r => {
+      const card = document.createElement('div');
+      card.className = 'recipe-section';
+      card.innerHTML = `
+        <div class="recipe-card">
+          <img src="${r.imageUrl || '/images/avocado.jpeg'}" alt="${r.title}">
+          <h3>${r.title}</h3>
+          <div class="text-left" style="font-size:14px;">
+            <b>재료</b>: ${shortenIngredients(r.ingredients)}
+          </div>
+        </div>
+        <a class="btn" href="recipe_view.html?id=${r.id}">상세 보기</a>
+      `;
+      wrap.appendChild(card);
+    });
+  }
+  function shortenIngredients(s) {
+    if (!s) return '';
+    const one = s.replace(/\n/g, ', ');
+    return one.length > 60 ? one.slice(0, 60) + '…' : one;
+  }
+
+  // 룰렛
   const canvas = document.getElementById("rouletteCanvas");
   const ctx = canvas.getContext("2d");
   const radius = canvas.width / 2;

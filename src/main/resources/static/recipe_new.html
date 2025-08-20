@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>레시피 생성</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet"
+        href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <style>
+    body { background:#e8f5e9; font-family: 'Segoe UI', sans-serif; }
+    .container { max-width: 720px; margin-top: 24px; }
+    .card { border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>레시피 생성</h3>
+    <div>
+      <a href="main.html" class="btn btn-outline-success btn-sm">홈</a>
+      <a href="recipes.html" class="btn btn-outline-success btn-sm">목록</a>
+    </div>
+  </div>
+
+  <div class="card p-3">
+    <form id="f">
+      <div class="form-group">
+        <label>레시피명</label>
+        <input class="form-control" name="title" required>
+      </div>
+      <div class="form-group">
+        <label>재료 (줄마다 하나씩 또는 콤마로 구분)</label>
+        <textarea class="form-control" name="ingredients" rows="4" placeholder="예) 계란&#10;대파&#10;간장" required></textarea>
+      </div>
+      <div class="form-group">
+        <label>만드는 순서 (줄마다 한 단계)</label>
+        <textarea class="form-control" name="steps" rows="6" placeholder="1) 계란을 풀어…&#10;2) 팬을 달구고…" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>대표 이미지</label><br>
+        <input type="file" id="imageFile" accept="image/*">
+        <small class="text-muted d-block">또는 아래에 외부 이미지 URL 입력</small>
+        <input class="form-control mt-2" id="imageUrl" placeholder="http(s)://...">
+      </div>
+
+      <button class="btn btn-success" type="submit">저장</button>
+      <a class="btn btn-outline-secondary" href="recipes.html">취소</a>
+    </form>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('f');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.append('title', form.title.value);
+    fd.append('ingredients', form.ingredients.value);
+    fd.append('steps', form.steps.value);
+
+    const file = document.getElementById('imageFile').files[0];
+    const url  = document.getElementById('imageUrl').value.trim();
+
+    if (file) {
+      fd.append('imageFile', file);
+    } else if (url) {
+      fd.append('imageUrl', url);
+    }
+
+    const res = await fetch('/api/recipes', { method:'POST', body: fd });
+    if (!res.ok) { alert('저장 실패'); return; }
+    const data = await res.json();
+    location.href = 'recipe_view.html?id=' + data.id;
+  });
+</script>
+</body>
+</html>
